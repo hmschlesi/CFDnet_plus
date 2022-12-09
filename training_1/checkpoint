@@ -1,0 +1,2 @@
+model_checkpoint_path: "vae_best_model.epoch98-loss0.00.w"
+all_model_checkpoint_paths: "vae_best_model.epoch98-loss0.00.w"
