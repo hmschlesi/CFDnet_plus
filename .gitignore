@@ -1,4 +1,4 @@
 # ignore all files in any directory named build
-airfoil2d/*
+airfoil2d*
 training*
 .ipynb_checkpoints/*
