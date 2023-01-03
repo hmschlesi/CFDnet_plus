@@ -12,4 +12,7 @@ ylim = [-40 , 40]
 xres=256
 yres=66
 
-cfdnetplus.VTKlatestTime(mainfolder)
+a,b =VTKlatestTime(mainfolder)
+
+
+print(b)

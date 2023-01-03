@@ -2,3 +2,4 @@
 airfoil2d*
 training*
 .ipynb_checkpoints/*
+cfdnetplus_models/*

@@ -1,4 +1,4 @@
-def pred2OF2D(mainfolder : str,fields : str, pred_xlim:float,pred_ylim:float):
+def pred2OF2D(mainfolder : str,fields : str, xlim:float,ylim:float):
     import numpy as np
     import os
     import meshio
@@ -9,12 +9,22 @@ def pred2OF2D(mainfolder : str,fields : str, pred_xlim:float,pred_ylim:float):
     from cfdnetplus.VTKlatestTime import VTKlatestTime
 
     main_split=mainfolder.split('/')
-    mainfolder_mesh=mainfolder+'/VTK/'+main_split[1]+'_0/'+'internal.vtu'
+   
 
     folder_pred=mainfolder+'/pred.npy'
     pred=np.load(folder_pred)
 
     [a,y_steps, x_steps,layers]=pred.shape
+
+    
+    x = np.arange(xlim[0],xlim[1], (xlim[1]-xlim[0])/x_steps)
+    y = np.arange(ylim[0],ylim[1], (ylim[1]-ylim[0])/y_steps)
+    
+    a,ts =VTKlatestTime(mainfolder)
+
+    #path to the latest VTK mesh
+    mainfolder_mesh=mainfolder+'/VTK/'+main_split[1]+'_'+str(ts)+'/internal.vtu'
+
 
     # loads the mesh and splits all relevant info into seperate variables
     mesh=meshio.read(mainfolder_mesh)
@@ -29,13 +39,7 @@ def pred2OF2D(mainfolder : str,fields : str, pred_xlim:float,pred_ylim:float):
     # finds center of each cell
     centroids=np.average(cell_pts,axis=1)
 
-    #export to Openfoam field files
-    x = np.arange(pred_xlim[0],pred_xlim[1], (pred_xlim[1]-pred_xlim[0])/x_steps)
-    y = np.arange(pred_ylim[0],pred_ylim[1], (pred_ylim[1]-pred_ylim[0])/y_steps)
-    
-    a,ts =VTKlatestTime(mainfolder)
-    #!!!!!!!!!!ts is the last time step, here its still hardcoded in the code, needs to be dynamic!!
-    #ts=40
+
 
     path2folder=mainfolder+'/'+str(0)
     path2dst=mainfolder+'/'+str(ts+1)
@@ -59,7 +63,7 @@ def pred2OF2D(mainfolder : str,fields : str, pred_xlim:float,pred_ylim:float):
                 znew=[]
                 znew.append( interpolate.interpn((x, y) , np.transpose(pred[:,:,:,it]), centroids[:,0:2],
                                     bounds_error=False,
-                                    method='nearest',
+                                    method='linear',
                                     fill_value=None,
                                     ))
                 znew=np.array(znew)
@@ -68,7 +72,12 @@ def pred2OF2D(mainfolder : str,fields : str, pred_xlim:float,pred_ylim:float):
             #iterates through the vertices and saves the corresponding values
             string=''
             for j in range(centroids.shape[0]):
-                string = string +'('+ str(U[0,j,0]) + ' '+str(U[0,j,1])+ ' '+ str(U[0,j,2])+')''\n'
+                #print(centroids[j])
+                if centroids[j,0] > xlim[0] and centroids[j,0] < xlim[1] and centroids[j,1] > ylim[0] and centroids[j,1] < ylim[1]:
+                    #print('in')
+                    string = string +'('+ str(U[0,j,0]) + ' '+str(U[0,j,1])+ ' '+ str(U[0,j,2])+')''\n'
+                else:
+                    string = string +'('+str(np.array(mesh.cell_data[field])[0,j,0])+ ' '+str(np.array(mesh.cell_data[field])[0,j,1])+ ' '+str(np.array(mesh.cell_data[field])[0,j,2])+')''\n'
             # creates a complete list will all lines that need to be written in the field file
             contents[idx[0]]='internalField   nonuniform List<vector>'+'\n'+str(np.array(centroids).shape[0])+'\n'+'('+string+');'
             
@@ -76,7 +85,7 @@ def pred2OF2D(mainfolder : str,fields : str, pred_xlim:float,pred_ylim:float):
             znew=[]
             znew.append( interpolate.interpn((x, y) , np.transpose(pred[:,:,:,i+2]), centroids[:,0:2],
                                     bounds_error=False,
-                                    method='nearest',
+                                    method='linear',
                                     fill_value=None,
                                     ))
             znew=np.array(znew)
@@ -84,7 +93,12 @@ def pred2OF2D(mainfolder : str,fields : str, pred_xlim:float,pred_ylim:float):
             #iterates through the vertices and saves the corresponding values
             string=''
             for j in range(centroids.shape[0]):
-                string = string + str(znew[0,j,0]) + '\n'
+                if centroids[j,0] > xlim[0] and centroids[j,0] < xlim[1] and centroids[j,1] > ylim[0] and centroids[j,1] < ylim[1]:
+                    #center inside of pred-domain use pred values
+                    string = string + str(znew[0,j,0]) + '\n'
+                else:
+                    #center outside of pred-domain use input values
+                    string = string + str(np.array(mesh.cell_data[field])[0,j]) + '\n'
             
             # creates a complete list will all lines that need to be written in the field file
             contents[idx[0]]='internalField   nonuniform List<scalar>'+'\n'+str(np.array(centroids).shape[0])+'\n'+'('+string+');'
