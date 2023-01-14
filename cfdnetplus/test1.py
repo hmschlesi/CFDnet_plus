@@ -1,4 +1,4 @@
-import cfdnetplus.extract2D as extract2D
+import cfdnetplus.extract2D_xy as extract2D_xy
 import numpy as np
 from scipy.interpolate import griddata
 from cfdnetplus.VTKlatestTime import VTKlatestTime
