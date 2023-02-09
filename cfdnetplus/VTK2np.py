@@ -43,7 +43,7 @@ def VTK2np(path_to_main, folders, fields, mode, xres:int, yres:int, x_lim:float,
         df = np.empty((0,yres, xres,l))
         if mode == 'xy':
             for j in files:
-                #print(j)
+                print(j)
                 df_t=extract2D_xy(j,fields,xres,yres,grid_x,grid_y,zcut)
                 df=np.concatenate((df,df_t),axis=0)
         elif mode == 'xz':
